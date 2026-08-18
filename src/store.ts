@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { doc, setDoc, onSnapshot } from 'firebase/firestore'
-import { db } from './firebase'
+import { db, isFirebaseConfigured } from './firebase'
 import type { GameState, DayLog } from './types'
 import { DEFAULT_QUESTS } from './quests'
 import { getLevelFromXP, getStreakMultiplier } from './levels'
@@ -85,12 +85,11 @@ export function useGameState(uid: string | null) {
 
   // Real-time Firestore sync
   useEffect(() => {
-    if (!uid) return
+    if (!uid || !isFirebaseConfigured || !db) return
     const ref = doc(db, 'users', uid)
     const unsub = onSnapshot(ref, (snap) => {
       if (snap.exists()) {
         const remote = snap.data() as GameState
-        // Ensure quests array exists (migration)
         if (!remote.quests || remote.quests.length === 0) {
           remote.quests = DEFAULT_QUESTS
         }
@@ -104,7 +103,7 @@ export function useGameState(uid: string | null) {
   const persist = useCallback((newState: GameState) => {
     setState(newState)
     saveLocal(newState)
-    if (uid) {
+    if (uid && isFirebaseConfigured && db) {
       const ref = doc(db, 'users', uid)
       setDoc(ref, newState)
     }

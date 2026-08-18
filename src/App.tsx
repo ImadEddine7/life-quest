@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { onAuthStateChanged, signOut, type User } from 'firebase/auth'
-import { auth } from './firebase'
+import { auth, isFirebaseConfigured } from './firebase'
 import { useGameState } from './store'
 import { Avatar } from './components/Avatar'
 import { QuestBoard } from './components/QuestBoard'
@@ -14,9 +14,13 @@ type Tab = 'quests' | 'achievements' | 'calendar' | 'stats'
 
 export function App() {
   const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(isFirebaseConfigured)
 
   useEffect(() => {
+    if (!isFirebaseConfigured || !auth) {
+      setLoading(false)
+      return
+    }
     return onAuthStateChanged(auth, (u) => {
       setUser(u)
       setLoading(false)
@@ -31,13 +35,13 @@ export function App() {
     )
   }
 
-  if (!user) return <Login />
+  if (isFirebaseConfigured && !user) return <Login />
 
   return <GameView user={user} />
 }
 
-function GameView({ user }: { user: User }) {
-  const { state, getTodayLog, toggleQuest } = useGameState(user.uid)
+function GameView({ user }: { user: User | null }) {
+  const { state, getTodayLog, toggleQuest } = useGameState(user?.uid ?? null)
   const [activeTab, setActiveTab] = useState<Tab>('quests')
   const [newAchievements, setNewAchievements] = useState<string[]>([])
 
@@ -60,17 +64,19 @@ function GameView({ user }: { user: User }) {
       )}
 
       {/* Header with sign out */}
-      <div className="flex justify-end px-4 pt-3">
-        <button
-          onClick={() => signOut(auth)}
-          className="text-[10px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-        >
-          Sign out
-        </button>
-      </div>
+      {user && auth && (
+        <div className="flex justify-end px-4 pt-3">
+          <button
+            onClick={() => signOut(auth!)}
+            className="text-[10px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            Sign out
+          </button>
+        </div>
+      )}
 
       {/* Hero */}
-      <div className="bg-gradient-to-b from-indigo-100 to-gray-50 dark:from-indigo-950/50 dark:to-gray-900 pt-4 pb-8 px-4">
+      <div className={`bg-gradient-to-b from-indigo-100 to-gray-50 dark:from-indigo-950/50 dark:to-gray-900 ${user ? 'pt-4' : 'pt-8'} pb-8 px-4`}>
         <Avatar level={state.level} xp={state.xp} streak={state.currentStreak} />
       </div>
 

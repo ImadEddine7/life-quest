@@ -3,6 +3,7 @@ import { auth, googleProvider } from '../firebase'
 
 export function Login() {
   const handleLogin = async () => {
+    if (!auth || !googleProvider) return
     try {
       await signInWithPopup(auth, googleProvider)
     } catch (err) {
