@@ -41,18 +41,19 @@ export function App() {
 }
 
 function GameView({ user }: { user: User | null }) {
-  const { state, getTodayLog, toggleQuest } = useGameState(user?.uid ?? null)
+  const { state, getLogForDate, toggleQuest } = useGameState(user?.uid ?? null)
   const [activeTab, setActiveTab] = useState<Tab>('quests')
   const [newAchievements, setNewAchievements] = useState<string[]>([])
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10))
 
   const handleToggle = useCallback((questId: string) => {
-    const unlocked = toggleQuest(questId)
+    const unlocked = toggleQuest(questId, selectedDate)
     if (unlocked) {
       setNewAchievements(unlocked)
     }
-  }, [toggleQuest])
+  }, [toggleQuest, selectedDate])
 
-  const todayLog = getTodayLog()
+  const dayLog = getLogForDate(selectedDate)
 
   return (
     <div className="min-h-full bg-gray-50 dark:bg-gray-900 pb-24">
@@ -108,7 +109,14 @@ function GameView({ user }: { user: User | null }) {
       {/* Content */}
       <div className="px-4 py-5 max-w-lg mx-auto">
         {activeTab === 'quests' && (
-          <QuestBoard quests={state.quests} todayLog={todayLog} streak={state.currentStreak} onToggle={handleToggle} />
+          <QuestBoard
+            quests={state.quests}
+            dayLog={dayLog}
+            streak={state.currentStreak}
+            selectedDate={selectedDate}
+            onDateChange={setSelectedDate}
+            onToggle={handleToggle}
+          />
         )}
         {activeTab === 'calendar' && (
           <Calendar logs={state.logs} totalQuests={state.quests.length} />

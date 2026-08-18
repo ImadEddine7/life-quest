@@ -4,28 +4,69 @@ import { getStreakMultiplier } from '../levels'
 
 interface QuestBoardProps {
   quests: Quest[]
-  todayLog: DayLog | undefined
+  dayLog: DayLog | undefined
   streak: number
+  selectedDate: string
+  onDateChange: (date: string) => void
   onToggle: (questId: string) => void
 }
 
-export function QuestBoard({ quests, todayLog, streak, onToggle }: QuestBoardProps) {
+export function QuestBoard({ quests, dayLog, streak, selectedDate, onDateChange, onToggle }: QuestBoardProps) {
   const categories = ['health', 'work', 'relationship', 'growth'] as const
   const multiplier = getStreakMultiplier(streak)
-  const completed = todayLog?.completed || []
+  const completed = dayLog?.completed || []
 
-  const todayStr = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+  const today = new Date().toISOString().slice(0, 10)
+  const isToday = selectedDate === today
+
+  const displayDate = new Date(selectedDate + 'T12:00:00').toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric',
+  })
+
+  const shiftDate = (days: number) => {
+    const d = new Date(selectedDate + 'T12:00:00')
+    d.setDate(d.getDate() + days)
+    const newDate = d.toISOString().slice(0, 10)
+    if (newDate <= today) onDateChange(newDate)
+  }
 
   return (
     <div className="space-y-5">
-      {/* Day indicator */}
-      <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 rounded-xl px-4 py-2.5 flex items-center justify-between">
-        <div>
-          <div className="text-[10px] uppercase tracking-wider text-indigo-500 dark:text-indigo-400 font-semibold">Reporting for</div>
-          <div className="text-sm font-bold text-gray-800 dark:text-gray-100">{todayStr}</div>
+      {/* Date selector */}
+      <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 rounded-xl px-3 py-2.5 flex items-center justify-between">
+        <button
+          onClick={() => shiftDate(-1)}
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-800/40 active:scale-90 transition-all"
+        >
+          ‹
+        </button>
+        <div className="text-center flex-1">
+          <div className="text-[10px] uppercase tracking-wider text-indigo-500 dark:text-indigo-400 font-semibold">
+            {isToday ? 'Today' : 'Reporting for'}
+          </div>
+          <div className="text-sm font-bold text-gray-800 dark:text-gray-100">{displayDate}</div>
         </div>
-        <div className="text-2xl">📋</div>
+        <button
+          onClick={() => shiftDate(1)}
+          disabled={isToday}
+          className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all active:scale-90 ${
+            isToday
+              ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+              : 'text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-800/40'
+          }`}
+        >
+          ›
+        </button>
       </div>
+
+      {!isToday && (
+        <button
+          onClick={() => onDateChange(today)}
+          className="w-full text-center text-xs text-indigo-600 dark:text-indigo-400 font-medium py-1 hover:underline"
+        >
+          ← Back to today
+        </button>
+      )}
 
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">Daily Quests</h2>
@@ -78,7 +119,7 @@ export function QuestBoard({ quests, todayLog, streak, onToggle }: QuestBoardPro
 
       <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-500 dark:text-gray-400">Today</span>
+          <span className="text-gray-500 dark:text-gray-400">{isToday ? 'Today' : displayDate}</span>
           <span className="font-medium text-gray-700 dark:text-gray-200">
             {completed.length}/{quests.length}
           </span>

@@ -109,17 +109,16 @@ export function useGameState(uid: string | null) {
     }
   }, [uid])
 
-  const getTodayLog = useCallback((): DayLog | undefined => {
-    return state.logs.find(l => l.date === today())
+  const getLogForDate = useCallback((date: string): DayLog | undefined => {
+    return state.logs.find(l => l.date === date)
   }, [state.logs])
 
-  const toggleQuest = useCallback((questId: string) => {
-    const todayStr = today()
+  const toggleQuest = useCallback((questId: string, date: string) => {
     const logs = [...state.logs]
-    let logIndex = logs.findIndex(l => l.date === todayStr)
+    let logIndex = logs.findIndex(l => l.date === date)
 
     if (logIndex === -1) {
-      logs.push({ date: todayStr, completed: [], xpEarned: 0 })
+      logs.push({ date, completed: [], xpEarned: 0 })
       logIndex = logs.length - 1
     }
 
@@ -164,5 +163,5 @@ export function useGameState(uid: string | null) {
     return newAchievements.length > 0 ? newAchievements : null
   }, [state, persist])
 
-  return { state, getTodayLog, toggleQuest }
+  return { state, getLogForDate, toggleQuest }
 }
